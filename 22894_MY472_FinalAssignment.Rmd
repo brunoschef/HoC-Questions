@@ -1,0 +1,562 @@
+---
+title: "22894_MY472_FinalAssignment"
+output: html_document
+date: '2023-12-16'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE, eval=FALSE)
+```
+
+GitHub Repository: https://github.com/brunoschef/MY472_FinalAssignment
+
+---
+
+```{r written_treasury}
+# Load libary
+library(httr)
+
+# Set API link for written questions to HM Treasury
+treasurypqurl <- "https://questions-statements-api.parliament.uk/api/writtenquestions/questions?tabledWhenFrom=2022-05-10&answered=Any&expandMember=true&includeWithdrawn=false&answeringBodies=14&house=Commons&take=200"
+
+# Get the data
+treasurypqdata <- GET(treasurypqurl)
+
+# Parse the data
+treasurypq <- content(treasurypqdata, "parsed")
+
+# Clean to get just the desired variables of interest
+treasurypq <- lapply(treasurypq$results, function(sub_element) unlist(sub_element$value))
+
+treasurypq <- lapply(treasurypq, function(observation) {
+  list(
+    askingMember.name = observation[[5]],
+    askingMember.party = observation[[6]],
+    askingMember.memberFrom = observation[[9]],
+    dateTabled = observation[[13]],
+    questionText = observation[[16]],
+    answeringBodyName = observation[[18]]
+  )
+})
+
+```
+
+```{r written_dhsc}
+# Set API link for written question to the Department of Health and Social Care
+dhscpqurl <- "https://questions-statements-api.parliament.uk/api/writtenquestions/questions?tabledWhenFrom=2022-05-10&answered=Any&expandMember=true&includeWithdrawn=false&answeringBodies=17&house=Commons&take=200"
+
+# Get the data
+dhscpqdata <- GET(dhscpqurl)
+
+# Parse the data
+dhscpq <- content(dhscpqdata, "parsed")
+
+# Clean to get just the desired variables of interest
+dhscpq <- lapply(dhscpq$results, function(sub_element) unlist(sub_element$value))
+
+dhscpq <- lapply(dhscpq, function(observation) {
+  list(
+    askingMember.name = observation[[5]],
+    askingMember.party = observation[[6]],
+    askingMember.memberFrom = observation[[9]],
+    dateTabled = observation[[13]],
+    questionText = observation[[16]],
+    answeringBodyName = observation[[18]]
+  )
+})
+
+```
+
+```{r written_dpw}
+# Set API link for written questions to the Department of Work and Pensions
+dwppqurl <- "https://questions-statements-api.parliament.uk/api/writtenquestions/questions?tabledWhenFrom=2022-05-10&answered=Any&expandMember=true&includeWithdrawn=false&answeringBodies=29&house=Commons&take=200"
+
+# Get the data
+dwppqdata <- GET(dwppqurl)
+
+# Parse the data
+dwppq <- content(dwppqdata, "parsed")
+
+# Clean to get just the desired variables of interest
+dwppq <- lapply(dwppq$results, function(sub_element) unlist(sub_element$value))
+
+dwppq <- lapply(dwppq, function(observation) {
+  list(
+    askingMember.name = observation[[5]],
+    askingMember.party = observation[[6]],
+    askingMember.memberFrom = observation[[9]],
+    dateTabled = observation[[13]],
+    questionText = observation[[16]],
+    answeringBodyName = observation[[18]]
+  )
+})
+
+```
+
+```{r written_cleaning}
+# Combine the three written questions lists into one list
+all_lists <- list(treasurypq, dhscpq, dwppq)
+
+# Initialize an empty data frame
+pq_df <- data.frame(matrix(ncol = 6, nrow = 0))
+
+# Loop through each list and bind rows to the data frame
+for (current_list in all_lists) {
+  for (observation in current_list) {
+    pq_df <- rbind(pq_df, unlist(observation))
+  }
+}
+
+# Add column names
+colnames(pq_df) <- c("membername", "party", "constituency", "datetabled", "questiontext", "answeringbody")
+
+# Add a column for question type
+pq_df$type <- 'written'
+
+```
+
+```{r oral_treasury}
+# Set API link for oral questions to HM Treasury
+treasuryoqurl <- "https://oralquestionsandmotions-api.parliament.uk/oralquestions/list?parameters.answeringDateStart=2022-05-10&parameters.answeringBodyIds=14&parameters.take=100"
+
+# Get the data
+treasuryoqdata <- GET(treasuryoqurl)
+
+# Parse the data
+treasuryoq <- content(treasuryoqdata, "parsed")
+
+# Clean to get just the desired variables of interest
+treasuryoq <- treasuryoq$Response
+
+treasuryoq <- lapply(treasuryoq, function(observation) {
+  list(
+    askingMember.name = observation[[15]][[3]],
+    askingMember.party = observation[[15]][[7]],
+    askingMember.memberFrom = observation[[15]][[5]],
+    dateTabled = observation[[6]],
+    questionText = observation[[3]],
+    answeringBodyName = observation[[13]]
+  )
+})
+
+```
+
+```{r oral_dhsc}
+# Set API link for oral questions to the Department of Health and Social Care
+dhscoqurl <- "https://oralquestionsandmotions-api.parliament.uk/oralquestions/list?parameters.answeringDateStart=2022-05-10&parameters.answeringBodyIds=17&parameters.take=100"
+
+# Get the data
+dhscoqdata <- GET(dhscoqurl)
+
+# Parse the data
+dhscoq <- content(dhscoqdata, "parsed")
+
+# Clean to get just the desired variables of interest
+dhscoq <- dhscoq$Response
+
+dhscoq <- lapply(dhscoq, function(observation) {
+  list(
+    askingMember.name = observation[[15]][[3]],
+    askingMember.party = observation[[15]][[7]],
+    askingMember.memberFrom = observation[[15]][[5]],
+    dateTabled = observation[[6]],
+    questionText = observation[[3]],
+    answeringBodyName = observation[[13]]
+  )
+})
+
+```
+
+```{r oral_dwp}
+# Set API link for oral questions to the Department of Work and Pensions
+dwpoqurl <- "https://oralquestionsandmotions-api.parliament.uk/oralquestions/list?parameters.answeringDateStart=2022-05-10&parameters.answeringBodyIds=29&parameters.take=100"
+
+# Get the data
+dwpoqdata <- GET(dwpoqurl)
+
+# Parse the data
+dwpoq <- content(dwpoqdata, "parsed")
+
+# Clean to get just the desired variables of interest
+dwpoq <- dwpoq$Response
+
+dwpoq <- lapply(dwpoq, function(observation) {
+  list(
+    askingMember.name = observation[[15]][[3]],
+    askingMember.party = observation[[15]][[7]],
+    askingMember.memberFrom = observation[[15]][[5]],
+    dateTabled = observation[[6]],
+    questionText = observation[[3]],
+    answeringBodyName = observation[[13]]
+  )
+})
+
+```
+
+```{r oral_cleaning}
+# Combine the three lists for oral questions into one list
+all_lists_oral <- list(treasuryoq, dhscoq, dwpoq)
+
+# Initialize an empty data frame
+oq_df <- data.frame(matrix(ncol = 6, nrow = 0))
+
+# Loop through each list and bind rows to the data frame
+for (current_list in all_lists_oral) {
+  for (observation in current_list) {
+    oq_df <- rbind(oq_df, unlist(observation))
+  }
+}
+
+# Add column names
+colnames(oq_df) <- c("membername", "party", "constituency", "datetabled", "questiontext", "answeringbody")
+
+# Add column for type of question
+oq_df$type <- 'oral'
+
+library(dplyr)
+
+# Combine the written questions data frame and the oral questions data frame
+questionsdata <- rbind(pq_df, oq_df)
+
+```
+
+```{r constituencyearnings}
+# Get data on median earnings in each constituency, clean and merge with main questions data frame
+constituencyearnings <- read.csv("constituencyearnings.csv")
+
+constituencyearnings <- subset(constituencyearnings, select = c("ConstituencyName", "WageMedianConst"))
+
+constituencyearnings <- constituencyearnings %>%
+  rename(constituency = ConstituencyName)
+
+questionsdata <- merge(questionsdata, constituencyearnings, by = "constituency", all.x = TRUE)
+
+# Convert wage to numeric
+questionsdata$WageMedianConst <- as.numeric(questionsdata$WageMedianConst)
+
+```
+
+```{r majority_scraper}
+# Scrape wikipedia to get data on each MPs majority in the 2019 general election
+library(rvest)
+
+genelecurl <- "https://en.wikipedia.org/wiki/Results_of_the_2019_United_Kingdom_general_election"
+html_elect <- read_html(genelecurl)
+
+# Get constituency data
+constituency <- html_elect %>%
+  html_nodes("table.wikitable td:nth-child(1) > a") %>%
+  html_text()
+
+# Get majority data for England
+engmajority <- html_elect %>%
+  html_nodes("table.wikitable:nth-of-type(1) td:nth-child(10)") %>%
+  html_text()
+
+#Get majority data for NI and removing errant data
+nimajority <- html_elect %>%
+  html_nodes("table.wikitable:nth-of-type(2) td:nth-child(8)") %>%
+  html_text()
+nimajority <- nimajority[1:18]
+
+# Get majority data for Scotland and removing errant data
+scotlandmajority <- html_elect %>%
+  html_nodes("table.wikitable:nth-of-type(3) td:nth-child(8)") %>%
+  html_text()
+scotlandmajority <- scotlandmajority[1:59]
+
+# Get majority data for Wales
+walesmajority <- html_elect %>%
+  html_nodes("table.wikitable:nth-of-type(4) td:nth-child(9)") %>%
+  html_text()
+
+# Combine all majority data into one vector
+majority <- c(engmajority, nimajority, scotlandmajority, walesmajority)
+majority <- gsub("\n", "", majority)
+majority <- gsub(",", "", majority)
+
+majority <- as.numeric(majority)
+
+# Combine all data into one dataframe and combine into overall questions data frame
+electiondata <- data.frame(constituency, majority)
+
+questionsdata <- merge(questionsdata, electiondata, by = "constituency", all.x = TRUE)
+
+```
+
+```{r coordinates_scraper}
+# Get coordinates of each constituency to do spatial analysis and merge into overall data frame
+constituencies <- unique(questionsdata$constituency)
+formatted_constit <- gsub(" ", "_", constituencies)
+formatted_constit <- paste0(formatted_constit, "_")
+
+coords <- tibble(constituency = constituencies, coordinates = NA)
+total_const <- length(formatted_constit)
+
+for (i in seq_along(formatted_constit)) {
+  current_constituency <- formatted_constit[i]
+  
+  # Get the full URL of the current constituency's Wikipedia page
+  current_url <- paste("https://en.wikipedia.org/wiki/", current_constituency, "(UK_Parliament_constituency)", sep = "")
+  
+  current_html <- read_html(current_url)
+  
+  # Get the coordinates of the constituency
+  coordinates <- current_html %>% html_elements(css = "span.geo-dec") %>% html_text()
+  
+  # Add NA if there are no coordinates available
+  if (length(coordinates) == 0) {
+    coordinates <- NA
+  }
+  
+  # Add the coordinates to the dataframe
+  coords$coordinates[i] <- coordinates
+  
+  percent_done <- (i / total_const) * 100
+  cat(sprintf("Progress: %.2f%%\r", percent_done))
+  flush.console()
+    
+    # Wait half a second before next request
+  Sys.sleep(0.5)
+}
+
+questionsdata <- merge(questionsdata, coords, by = "constituency", all.x = TRUE)
+
+```
+
+```{r nation_scraper}
+# Get data on which nation the MP's constituency is in
+constituenciesurl <- "https://en.wikipedia.org/wiki/List_of_United_Kingdom_Parliament_constituencies"
+html_constituencies <- read_html(constituenciesurl)
+
+# Get data on which nation the MP's constituency is in
+england <- html_constituencies %>%
+  html_nodes("table.wikitable:nth-of-type(5) td:nth-child(1) > a") %>%
+  html_text()
+
+scotland <- html_constituencies %>%
+  html_nodes("table.wikitable:nth-of-type(6) td:nth-child(1) > a") %>%
+  html_text()
+
+wales <- html_constituencies %>%
+  html_nodes("table.wikitable:nth-of-type(7) td:nth-child(1) > a") %>%
+  html_text()
+
+ni <- html_constituencies %>%
+  html_nodes("table.wikitable:nth-of-type(8) td:nth-child(1) > a") %>%
+  html_text()
+
+# Create new column in overall questions dataset titled 'nation'
+questionsdata$nation <- NA
+
+# Fill in the nation column with the appropriate nation
+questionsdata$nation[questionsdata$constituency %in% england] <- "England"
+questionsdata$nation[questionsdata$constituency %in% scotland] <- "Scotland"
+questionsdata$nation[questionsdata$constituency %in% wales] <- "Wales"
+questionsdata$nation[questionsdata$constituency %in% ni] <- "Northern Ireland"
+
+```
+
+```{r devolved_parl}
+# Create new column in overall dataset titled 'has_devolved_parl' indicating whether an MP represents an area with a devolved parliament
+questionsdata$has_devolved_parl <- NA
+
+# Fill in the has_devolved_parl column with the appropriate value
+questionsdata$has_devolved_parl[questionsdata$nation == "England"] <- 'No'
+questionsdata$has_devolved_parl[questionsdata$nation == "Northern Ireland"] <- 'Yes'
+questionsdata$has_devolved_parl[questionsdata$nation == "Scotland"] <- 'Yes'
+questionsdata$has_devolved_parl[questionsdata$nation == "Wales"] <- 'Yes'
+
+```
+
+```{r sqlite}
+# Write final table to a relational database (note: this means all cells scraping can be set to eval=FALSE in the R markdown, to avoid re-scraping websites every time the document is knitted)
+library(DBI)
+final_db <- dbConnect(RSQLite::SQLite(), "MY472_FinalAssignment.sqlite")
+file.exists("MY472_FinalAssignment.sqlite")
+
+dbWriteTable(final_db, "questionsdata", questionsdata, overwrite = TRUE)
+
+```
+
+```{r call_sqlite, eval=TRUE}
+library(DBI)
+
+#Connect to relational database
+final_db <- dbConnect(RSQLite::SQLite(), "MY472_FinalAssignment.sqlite")
+
+# Call table in relational database
+questionsdf <- dbGetQuery(final_db, 
+                            "SELECT * 
+                            FROM questionsdata")
+
+```
+
+Members of Parliament (MPs) in the UK use parliamentary questions as mechanisms to query the government on a wide range of issues. This project analyses whether there are factors differentiating MPs that tend to table questions to HM Treasury (economic issues), The Department of Health and Social Care, and The Department of Work and Pensions (welfare issues). Analysis will focus on the following factors: the degree of marginality in the 2019 election, political party, median wage in the MPs constituency, and whether the MP represents a devolved nation (Scotland, Wales or Northern Ireland).
+
+The UK Parliament API was used to collect information on oral and written questions, including the name of the MP tabling the question, that MP's constituency and party, which Government department answered the question, and whether it was a written or oral question. All questions were collected in the same time frame (from May 2022). Further data, including the MPs 2019 majority and their constituency's coordinates were scraped from Wikipedia. Lastly, the median weekly wage in each constituency was collected from pre-existing data published by the House of Commons Library. All of these data sources were combined into one table that was written to a relational database. This allowed the data to be easily accessed and the web scrapers to only be run once, rather than every time the document is knitted.
+
+Below are the counts of categorical variables of interest and summary statistics for numeric variables:
+
+```{r summaries, eval=TRUE, results='asis'}
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(kableExtra)
+
+# Create a summary table for answeringbody
+answeringbody_summary <- questionsdf %>%
+  count(answeringbody) %>%
+  rename(count = n)
+
+cat("<div style='text-align: center;'>")
+cat("<h2 style='font-size: 18px;'>Answering Body Summary</h2>")
+kable(answeringbody_summary, format = "html") %>%
+  kable_styling(full_width = FALSE)
+
+# Add some space between tables
+cat("<br>")
+
+# Create a summary table for type of question
+questiontype_summary <- questionsdf %>%
+  count(type) %>%
+  rename(count = n)
+
+cat("<h2 style='font-size: 18px;'>Question Type Summary</h2>")
+kable(questiontype_summary, format = "html") %>%
+  kable_styling(full_width = FALSE)
+
+cat("<br>")
+
+# Create a summary table for party
+party_summary <- questionsdf %>%
+  count(party) %>%
+  rename(count = n)
+
+cat("<h2 style='font-size: 18px;'>Party Summary</h2>")
+kable(party_summary, format = "html") %>%
+  kable_styling(full_width = FALSE)
+
+cat("<br>")
+
+# Create a summary table for hasdevolvedparl
+hasdevolvedparl_summary <- questionsdf %>%
+  count(has_devolved_parl) %>%
+  rename(count = n)
+
+cat("<h2 style='font-size: 18px;'>Has Devolved Parliament Summary</h2>\n")
+kable(hasdevolvedparl_summary, format = "html") %>%
+  kable_styling(full_width = FALSE)
+
+cat("<br>")
+
+# Create a summary table for nation
+nation_summary <- questionsdf %>%
+  count(nation) %>%
+  rename(count = n)
+
+cat("<h2 style='font-size: 18px;'>Nation Summary</h2>")
+kable(nation_summary, format = "html") %>%
+  kable_styling(full_width = FALSE)
+
+cat("<br>")
+
+# Create a table with summary statistics for the numeric variables
+numeric_summary <- questionsdf %>%
+  select(majority, WageMedianConst) %>%
+  summary()
+
+cat("<h2 style='font-size: 18px;'>Numeric Variables Summary</h2>")
+cat("</div>")
+kable(numeric_summary, format = "html") %>%
+  kable_styling(full_width = FALSE)
+
+cat("<br>")
+
+```
+
+As seen above, there are 300 questions asked to each government department. Out of the total 900 questions, 600 are written questions and 300 are oral questions. The majority of questions are tabled by Conservative or Labour MPs, with several also coming from the Scottish National Party (SNP) and the Liberal Democrats. 173 of the 900 total questions were tabled by MPs from countries with devolved parliaments (83 from Scotland, 62 from Wales, and 28 from Northern Ireland). The mean value for parliamenrtaray majority is 11,211 with a very large spread, while the mean for median weekly wage is 689.4.
+
+Below in Figure 1 is a visualization of where in the UK questions are being tabled from, where color is coded by answering body:
+
+```{r spatial, eval=TRUE}
+## SPATIAL ANALYSIS/VISUALISATION
+library(sf)
+library(ggplot2)
+
+# Read in shapefile (see github repo for shapefile)
+shapefile_path <- "~/Desktop/UKRegions_Shapefile"
+uk_shapefile <- st_read(dsn = shapefile_path)
+
+# Simplify shapefile to reduce run time of plot
+simplified_shapefile <- st_simplify(uk_shapefile, dTolerance = 100, preserveTopology = TRUE)
+
+# Extract latitude and longitude from the coordinates in questions data and save as separate objects
+latitude <- as.numeric(sub("^(.*?)°.*", "\\1", questionsdf$coordinates))
+longitude <- as.numeric(sub(".*N\\s+([0-9.]+).*", "-\\1", questionsdf$coordinates))
+
+# Create a dataframe of the latitude and longitude plus outcome variable 'answeringbody'
+points <- data.frame(lon = longitude, lat = latitude, answeringbody = questionsdf$answeringbody)
+points$answeringbody <- as.factor(points$answeringbody)
+
+# Remove any rows without coordinates and convert to spatial object
+points <- na.omit(points)
+points <- st_as_sf(points, coords = c("lon", "lat"), crs = 4326)
+
+# Plot shapefile and coordinates
+plot_shapefile <- ggplot() +
+  geom_sf(data = simplified_shapefile, fill = "grey", color = "white") +
+  theme_void() +
+  theme(axis.text = element_blank(), axis.ticks = element_blank()) +
+  coord_sf(crs = st_crs(simplified_shapefile), lims_method = "geometry_bbox")
+  
+plot_shapefile + geom_sf(data = points, aes(color = answeringbody), size = 1) +
+  scale_color_manual(values = c("red", "blue", "green")) +
+  ggtitle("Figure 1: Map of Questions colored by Answering Body")
+
+
+```
+
+The points seem generally clustered in highly populated areas, which is expected, as there are more constituencies in urban areas. It appears that questions are asked to the three departments at roughly equal rates across most of the country. The exception to this is in the devolved nations, where it seems that DHSC questions could be asked at slightly lower rates. This would make sense, as the NHS in these countries is run by the devolved governments, and it is likely that members of their respective parliaments would deal with a greater number of health-related queries than MPs.
+
+Below is the output of a multinomial logistic regression model exploring the relationship between the variables of interest:
+
+```{r regression, eval=TRUE}
+## REGRESSION MODEL
+
+# Dependent variable - whether an MP asked a question about an economic, health or welfare issue
+# Independent variables - party, median constituency wage, majority, and whether the MP represents a devolved nation
+library(broom)
+library(nnet)
+library(kableExtra)
+
+# Making variables factors and releveling the needed variables to shift the reference category
+questionsdf$answeringbody <- as.factor(questionsdf$answeringbody)
+questionsdf$answeringbody <- relevel(questionsdf$answeringbody, ref = "Treasury")
+
+questionsdf$party <- as.factor(questionsdf$party)
+questionsdf$party <- relevel(questionsdf$party, ref = "Conservative")
+
+questionsdf$has_devolved_parl <- as.factor(questionsdf$has_devolved_parl)
+
+# Multinomial logistic regression model to see if there are any differentiating factors distinguishing MPs that table questions to the different departments
+model <- multinom(answeringbody ~ party + WageMedianConst + majority + has_devolved_parl, data = questionsdf)
+
+# Print in tidy format
+tidy(model) %>%
+  kable(format = "html") %>%
+  kable_styling(full_width = FALSE)
+```
+
+Due to small counts for many parties, analysis will focus on the four largest parties, the Conservatives, Labour, Liberal Democrats and the SNP. It appears that MPs in the Labour Party, Liberal Democrats, and SNP have higher log odds relative to Conservatives of tabling a DWP question compared to a Treasury question. The same is observed for Health and Social Care, with similarly increased log odds (positive estimate and p < 0.05). In other words, there is evidence to suggest that party affiliation is associated with differences in the government department to which an MP asks a question.
+
+Additionally, for every one unit increase in median constituency wage, MPs have lower log odds of asking a question to DPW compared to HM Treasury. Once again this is observed for Health and Social Care. Size of majority did not return a significant result for DHSC, but it did for DPW; it seems that MPs with larger majorities have lower log odds of asking a DPW question compared to a Treasury question. Lastly, MPs representing a devolved nation have lower log odds of asking a question to DHSC compared to HM Treasury. This adds evidence to the hypothesis that MPs from Wales, Scotland and Northern Ireland engage less in Westminster with issues that are devolved.
+
+In summary, the spatial visualisation and the findings of the multinomial logistic regression model show that factors discriminating whether MPs tend to ask questions relating to economic, health, or welfare issues include party affiliation, median wage in the Member's constituency, whether they represent a devolved nation, and the size of their majority.
+
+---
+
+**Code appendix**
+```{r ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE}
+
+```
